@@ -42,14 +42,21 @@ pip install -r requirements.txt
 
 ### 基础使用示例
 
+#### 示例图片
+
+![示例图片](example.png)
+
 #### 1. 文字水印
 ```bash
 # 添加文字水印
 python main.py --mode add --image example.png --watermark "SDU2025" --output watermarked_text.png --alpha 0.15
 
 # 提取文字水印
-python main.py --mode extract --image watermarked_text.png --watermark "SDU2025"
+python main.py --mode extract --image watermarked_text.png
 ```
+![文字水印图片](watermarked_text.png)
+![提取结果](assert/extract_result.png)
+
 
 #### 2. 图片水印
 ```bash
@@ -59,6 +66,12 @@ python main.py --mode add-image --image example.png --watermark-image QRcode.png
 # 提取QR码水印
 python main.py --mode extract-image --image watermarked_qr.png --output extracted_qr.png
 ```
+![运行结果](assert/extract_qr_result.png)
+![图片水印](watermarked_qr.png)
+
+<img src="extracted_qr.png" alt="提取结果" style="width: 50%;">
+
+
 
 #### 3. 完整测试与演示
 ```bash
@@ -71,6 +84,9 @@ python image_watermark_demo.py
 # 运行性能基准测试
 python benchmark.py --test all --watermark "SDU2025"
 ```
+![测试结果](watermark_benchmark_report.png)
+
+
 
 ## 🔬 支持的攻击类型测试
 
