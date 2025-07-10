@@ -68,8 +68,7 @@ python main.py --mode extract-image --image watermarked_qr.png --output extracte
 ```
 ![运行结果](assert/extract_qr_result.png)
 ![图片水印](watermarked_qr.png)
-
-<img src="extracted_qr.png" alt="提取结果" style="width: 50%;">
+![提取结果](extracted_qr.png)
 
 
 
