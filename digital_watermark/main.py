@@ -636,7 +636,7 @@ class RobustnessTest:
         return results
     
     def _calculate_accuracy(self, original, extracted):
-        """计算字符准确率"""
+        """Calculate character accuracy"""
         if len(original) == 0:
             return 1.0 if len(extracted) == 0 else 0.0
         
