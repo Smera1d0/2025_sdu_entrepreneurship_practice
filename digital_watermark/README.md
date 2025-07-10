@@ -83,7 +83,7 @@ python main.py --mode extract-image --image watermarked_qr.png --output extracte
 </div>
 
 <div align="center">
-  <img src="extracted_qr.png" alt="提取结果" style="width:300%;">
+  <img src="extracted_qr.png" alt="提取结果" style="width:60%;">
 </div>
 
 #### 3. 完整测试与演示
