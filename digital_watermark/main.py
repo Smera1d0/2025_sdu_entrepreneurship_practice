@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Digital Blind Watermarking System
-DCT-based blind watermark embedding and extraction with robustness testing
-"""
-
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -73,6 +66,30 @@ class BlindWatermark:
             if len(byte) == 8:
                 chars.append(chr(int(byte, 2)))
         return ''.join(chars)
+    
+    def image_to_binary(self, image_path, target_size=(32, 32)):
+        """将图像转换为二进制数据"""
+        try:
+            img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+            if img is None:
+                raise ValueError(f"无法读取水印图像: {image_path}")
+            
+            img_resized = cv2.resize(img, target_size)
+            _, binary_img = cv2.threshold(img_resized, 127, 1, cv2.THRESH_BINARY)
+            return binary_img.flatten().tolist()
+        except Exception as e:
+            raise ValueError(f"图像水印处理错误: {e}")
+    
+    def binary_to_image(self, binary_data, image_size=(32, 32), output_path=None):
+        """将二进制数据转换回图像"""
+        try:
+            binary_array = np.array(binary_data).reshape(image_size)
+            img_array = (binary_array * 255).astype(np.uint8)
+            if output_path:
+                cv2.imwrite(output_path, img_array)
+            return img_array
+        except Exception as e:
+            raise ValueError(f"二进制数据转图像错误: {e}")
     
     def add_watermark(self, image_path, watermark_text, output_path):
         """
@@ -208,6 +225,133 @@ class BlindWatermark:
             watermark_text = full_text[:watermark_length]  # 如果没找到结束符，按长度截取
         
         return watermark_text
+    
+    def add_image_watermark(self, image_path, watermark_image_path, output_path, watermark_size=(32, 32)):
+        """向图像添加图片水印"""
+        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            raise ValueError(f"无法读取图像: {image_path}")
+        
+        img = img.astype(np.float32)
+        watermark_bits = self.image_to_binary(watermark_image_path, watermark_size)
+        
+        # 添加尺寸信息和结束标记
+        size_bits = []
+        for dim in watermark_size:
+            size_bits.extend([int(b) for b in format(dim, '08b')])
+        end_marker = [1, 0, 1, 0, 1, 0, 1, 0]
+        all_watermark_bits = size_bits + watermark_bits + end_marker
+        
+        h, w = img.shape
+        num_blocks_h = h // self.block_size
+        num_blocks_w = w // self.block_size
+        total_blocks = num_blocks_h * num_blocks_w
+        
+        if len(all_watermark_bits) > total_blocks:
+            max_pixels = (total_blocks - 16 - 8) // 1
+            max_size = int(np.sqrt(max_pixels))
+            raise ValueError(f"水印图像太大，建议尺寸不超过 {max_size}x{max_size}")
+        
+        np.random.seed(42)
+        positions = list(range(total_blocks))
+        np.random.shuffle(positions)
+        
+        watermarked_img = img.copy()
+        
+        for i, bit in enumerate(all_watermark_bits):
+            if i >= len(positions):
+                break
+                
+            pos = positions[i]
+            row = pos // num_blocks_w
+            col = pos % num_blocks_w
+            
+            block = img[row*self.block_size:(row+1)*self.block_size,
+                       col*self.block_size:(col+1)*self.block_size]
+            
+            dct_block = self._dct2(block)
+            watermarked_dct = self._embed_watermark_block(dct_block.copy(), bit)
+            watermarked_block = self._idct2(watermarked_dct)
+            
+            watermarked_img[row*self.block_size:(row+1)*self.block_size,
+                           col*self.block_size:(col+1)*self.block_size] = watermarked_block
+        
+        watermarked_img = np.clip(watermarked_img, 0, 255).astype(np.uint8)
+        cv2.imwrite(output_path, watermarked_img)
+        
+        print(f"Image watermark embedding completed: {output_path}")
+        print(f"Watermark image size: {watermark_size[0]}x{watermark_size[1]}")
+        return watermarked_img
+    
+    def extract_image_watermark(self, watermarked_image_path, output_watermark_path=None):
+        """从图像中提取图片水印"""
+        img = cv2.imread(watermarked_image_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            raise ValueError(f"无法读取图像: {watermarked_image_path}")
+        
+        img = img.astype(np.float32)
+        h, w = img.shape
+        num_blocks_h = h // self.block_size
+        num_blocks_w = w // self.block_size
+        total_blocks = num_blocks_h * num_blocks_w
+        
+        np.random.seed(42)
+        positions = list(range(total_blocks))
+        np.random.shuffle(positions)
+        
+        # 提取尺寸信息
+        size_bits = []
+        for i in range(16):
+            if i >= len(positions):
+                break
+            pos = positions[i]
+            row = pos // num_blocks_w
+            col = pos % num_blocks_w
+            
+            block = img[row*self.block_size:(row+1)*self.block_size,
+                       col*self.block_size:(col+1)*self.block_size]
+            dct_block = self._dct2(block)
+            bit = self._extract_watermark_block(dct_block)
+            size_bits.append(bit)
+        
+        try:
+            width_bits = ''.join(map(str, size_bits[:8]))
+            height_bits = ''.join(map(str, size_bits[8:16]))
+            watermark_width = int(width_bits, 2)
+            watermark_height = int(height_bits, 2)
+            
+            if watermark_width <= 0 or watermark_height <= 0 or watermark_width > 256 or watermark_height > 256:
+                raise ValueError("提取的水印尺寸无效")
+        except Exception as e:
+            raise ValueError(f"无法解析水印尺寸: {e}")
+        
+        watermark_size = (watermark_width, watermark_height)
+        total_watermark_bits = watermark_width * watermark_height
+        
+        # 提取水印数据
+        watermark_bits = []
+        for i in range(16, 16 + total_watermark_bits + 8):
+            if i >= len(positions):
+                break
+            pos = positions[i]
+            row = pos // num_blocks_w
+            col = pos % num_blocks_w
+            
+            block = img[row*self.block_size:(row+1)*self.block_size,
+                       col*self.block_size:(col+1)*self.block_size]
+            dct_block = self._dct2(block)
+            bit = self._extract_watermark_block(dct_block)
+            watermark_bits.append(bit)
+        
+        actual_watermark_bits = watermark_bits[:total_watermark_bits]
+        watermark_image = self.binary_to_image(actual_watermark_bits, watermark_size, output_watermark_path)
+        
+        print(f"Image watermark extraction completed")
+        print(f"Extracted watermark size: {watermark_size[0]}x{watermark_size[1]}")
+        if output_watermark_path:
+            print(f"Saved to: {output_watermark_path}")
+        
+        return watermark_image
 
 
 class RobustnessTest:
@@ -424,12 +568,15 @@ def create_sample_image(width=512, height=512, output_path="sample.png"):
 
 def main():
     parser = argparse.ArgumentParser(description='数字盲水印系统')
-    parser.add_argument('--mode', choices=['add', 'extract', 'test'], default='test',
-                       help='运行模式: add(添加水印), extract(提取水印), test(完整测试)')
+    parser.add_argument('--mode', choices=['add', 'extract', 'test', 'add-image', 'extract-image'], default='test',
+                       help='运行模式: add(添加文字水印), extract(提取文字水印), test(完整测试), add-image(添加图片水印), extract-image(提取图片水印)')
     parser.add_argument('--image', type=str, help='输入图像路径')
     parser.add_argument('--watermark', type=str, default='SDU2025', help='水印文本')
+    parser.add_argument('--watermark-image', type=str, help='水印图像路径')
     parser.add_argument('--output', type=str, help='输出路径')
     parser.add_argument('--alpha', type=float, default=0.1, help='水印强度')
+    parser.add_argument('--watermark-size', type=int, nargs=2, default=[32, 32], metavar=('WIDTH', 'HEIGHT'),
+                       help='水印图像尺寸 (默认: 32 32)')
     
     args = parser.parse_args()
     
@@ -443,6 +590,18 @@ def main():
         
         watermark_system.add_watermark(args.image, args.watermark, args.output)
         
+    elif args.mode == 'add-image':
+        if not args.image or not args.output or not args.watermark_image:
+            print("添加图片水印模式需要指定 --image, --watermark-image 和 --output 参数")
+            return
+        
+        if not os.path.exists(args.watermark_image):
+            print(f"水印图像文件不存在: {args.watermark_image}")
+            return
+        
+        watermark_size = tuple(args.watermark_size)
+        watermark_system.add_image_watermark(args.image, args.watermark_image, args.output, watermark_size)
+        
     elif args.mode == 'extract':
         if not args.image:
             print("提取水印模式需要指定 --image 参数")
@@ -450,6 +609,14 @@ def main():
         
         extracted = watermark_system.extract_watermark(args.image, len(args.watermark))
         print(f"提取的水印: '{extracted}'")
+        
+    elif args.mode == 'extract-image':
+        if not args.image:
+            print("提取图片水印模式需要指定 --image 参数")
+            return
+        
+        output_watermark = args.output if args.output else "extracted_watermark.png"
+        watermark_system.extract_image_watermark(args.image, output_watermark)
         
     elif args.mode == 'test':
         # 基础功能测试

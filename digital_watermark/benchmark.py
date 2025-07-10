@@ -211,6 +211,103 @@ class WatermarkBenchmark:
         
         return test_results
     
+    def benchmark_image_watermark_performance(self, image_sizes, watermark_image_path="QRcode.png", alpha=0.1):
+        """
+        测试图片水印在不同图像尺寸下的性能
+        
+        Args:
+            image_sizes (list): 图像尺寸列表 [(width, height), ...]
+            watermark_image_path (str): 水印图像路径
+            alpha (float): 水印强度
+        """
+        print("=== Image Watermark Performance Benchmark ===")
+        
+        if not os.path.exists(watermark_image_path):
+            print(f"Warning: Watermark image {watermark_image_path} not found, skipping image watermark test")
+            return []
+        
+        watermark_system = BlindWatermark(alpha=alpha)
+        embedding_results = []
+        
+        # 不同的水印尺寸
+        watermark_sizes = [(16, 16), (24, 24), (32, 32)]
+        
+        for size in image_sizes:
+            width, height = size
+            print(f"\nTesting image size: {width}x{height}")
+            
+            # 创建测试图像
+            test_image = f"test_{width}x{height}.png"
+            create_sample_image(width, height, test_image)
+            
+            for wm_size in watermark_sizes:
+                print(f"  Watermark size: {wm_size[0]}x{wm_size[1]}")
+                
+                # 测试嵌入时间
+                start_time = time.time()
+                output_path = f"watermarked_img_{width}x{height}_wm_{wm_size[0]}x{wm_size[1]}.png"
+                
+                try:
+                    watermark_system.add_image_watermark(test_image, watermark_image_path, output_path, wm_size)
+                    embedding_time = time.time() - start_time
+                    
+                    # 验证提取
+                    extracted_path = f"extracted_wm_{width}x{height}_{wm_size[0]}x{wm_size[1]}.png"
+                    extracted_img = watermark_system.extract_image_watermark(output_path, extracted_path)
+                    
+                    # 计算图像质量指标
+                    psnr, ssim = self._calculate_image_quality(test_image, output_path)
+                    
+                    # 计算水印相似度
+                    original_wm = cv2.imread(watermark_image_path, cv2.IMREAD_GRAYSCALE)
+                    original_wm_resized = cv2.resize(original_wm, wm_size)
+                    watermark_similarity = self._calculate_watermark_similarity(original_wm_resized, extracted_img)
+                    
+                    result = {
+                        'size': f"{width}x{height}",
+                        'watermark_size': f"{wm_size[0]}x{wm_size[1]}",
+                        'width': width,
+                        'height': height,
+                        'pixels': width * height,
+                        'wm_pixels': wm_size[0] * wm_size[1],
+                        'embedding_time': embedding_time,
+                        'psnr': psnr,
+                        'ssim': ssim,
+                        'watermark_similarity': watermark_similarity
+                    }
+                    
+                    embedding_results.append(result)
+                    
+                    print(f"    Embedding time: {embedding_time:.3f}s")
+                    print(f"    PSNR: {psnr:.2f} dB")
+                    print(f"    SSIM: {ssim:.4f}")
+                    print(f"    Watermark similarity: {watermark_similarity:.4f}")
+                    
+                    # 清理临时文件
+                    os.remove(output_path)
+                    os.remove(extracted_path)
+                    
+                except Exception as e:
+                    print(f"    Error: {str(e)}")
+                    embedding_results.append({
+                        'size': f"{width}x{height}",
+                        'watermark_size': f"{wm_size[0]}x{wm_size[1]}",
+                        'width': width,
+                        'height': height,
+                        'pixels': width * height,
+                        'wm_pixels': wm_size[0] * wm_size[1],
+                        'embedding_time': float('inf'),
+                        'psnr': 0,
+                        'ssim': 0,
+                        'watermark_similarity': 0
+                    })
+            
+            # 清理测试图像
+            os.remove(test_image)
+        
+        self.results.extend(embedding_results)
+        return embedding_results
+    
     def _calculate_image_quality(self, original_path, watermarked_path):
         """计算图像质量指标：PSNR和SSIM"""
         try:
@@ -282,6 +379,25 @@ class WatermarkBenchmark:
         
         return success_count / len(quick_tests)
     
+    def _calculate_watermark_similarity(self, original, extracted):
+        """计算水印相似度"""
+        try:
+            # 确保尺寸相同
+            if original.shape != extracted.shape:
+                extracted = cv2.resize(extracted, (original.shape[1], original.shape[0]))
+            
+            # 二值化
+            _, orig_binary = cv2.threshold(original, 127, 1, cv2.THRESH_BINARY)
+            _, extr_binary = cv2.threshold(extracted, 127, 1, cv2.THRESH_BINARY)
+            
+            # 计算匹配的像素比例
+            correct_pixels = np.sum(orig_binary == extr_binary)
+            total_pixels = orig_binary.size
+            
+            return correct_pixels / total_pixels
+        except Exception:
+            return 0.0
+    
     def generate_benchmark_report(self):
         """生成基准测试报告"""
         if not self.results:
@@ -292,12 +408,12 @@ class WatermarkBenchmark:
         fig, axes = plt.subplots(2, 2, figsize=(16, 12))
         
         # 1. 嵌入时间 vs 图像尺寸
-        embedding_results = [r for r in self.results if 'pixels' in r]
+        embedding_results = [r for r in self.results if 'pixels' in r and r['embedding_time'] != float('inf')]
         if embedding_results:
             pixels = [r['pixels'] for r in embedding_results]
-            times = [r['embedding_time'] for r in embedding_results if r['embedding_time'] != float('inf')]
+            times = [r['embedding_time'] for r in embedding_results]
             
-            if times:
+            if len(pixels) == len(times) and len(times) > 0:
                 axes[0,0].scatter(pixels, times)
                 axes[0,0].set_xlabel('Image Size (pixels)')
                 axes[0,0].set_ylabel('Embedding Time (seconds)')
@@ -305,39 +421,55 @@ class WatermarkBenchmark:
                 axes[0,0].grid(True)
         
         # 2. Alpha值对PSNR的影响
-        alpha_results = [r for r in self.results if 'alpha' in r]
+        alpha_results = [r for r in self.results if 'alpha' in r and r['psnr'] > 0]
         if alpha_results:
             alphas = [r['alpha'] for r in alpha_results]
             psnrs = [r['psnr'] for r in alpha_results]
             
-            axes[0,1].plot(alphas, psnrs, 'o-')
-            axes[0,1].set_xlabel('Alpha Value')
-            axes[0,1].set_ylabel('PSNR (dB)')
-            axes[0,1].set_title('Image Quality vs Watermark Strength')
-            axes[0,1].grid(True)
+            if len(alphas) == len(psnrs) and len(psnrs) > 0:
+                axes[0,1].plot(alphas, psnrs, 'o-')
+                axes[0,1].set_xlabel('Alpha Value')
+                axes[0,1].set_ylabel('PSNR (dB)')
+                axes[0,1].set_title('Image Quality vs Watermark Strength')
+                axes[0,1].grid(True)
         
         # 3. Alpha值对鲁棒性的影响
         if alpha_results:
-            robustness_scores = [r['robustness_score'] for r in alpha_results]
+            robustness_scores = [r['robustness_score'] for r in alpha_results if 'robustness_score' in r]
+            alphas_robust = [r['alpha'] for r in alpha_results if 'robustness_score' in r]
             
-            axes[1,0].plot(alphas, robustness_scores, 'o-', color='orange')
-            axes[1,0].set_xlabel('Alpha Value')
-            axes[1,0].set_ylabel('Robustness Score')
-            axes[1,0].set_title('Robustness vs Watermark Strength')
-            axes[1,0].grid(True)
+            if len(alphas_robust) == len(robustness_scores) and len(robustness_scores) > 0:
+                axes[1,0].plot(alphas_robust, robustness_scores, 'o-', color='orange')
+                axes[1,0].set_xlabel('Alpha Value')
+                axes[1,0].set_ylabel('Robustness Score')
+                axes[1,0].set_title('Robustness vs Watermark Strength')
+                axes[1,0].grid(True)
         
-        # 4. PSNR vs SSIM散点图
-        all_results = [r for r in self.results if 'psnr' in r and 'ssim' in r]
-        if all_results:
-            psnrs = [r['psnr'] for r in all_results if r['psnr'] > 0]
-            ssims = [r['ssim'] for r in all_results if r['ssim'] > 0]
+        # 4. 水印相似度分布（如果有图片水印结果）
+        image_wm_results = [r for r in self.results if 'watermark_similarity' in r and r['watermark_similarity'] > 0]
+        if image_wm_results:
+            similarities = [r['watermark_similarity'] for r in image_wm_results]
+            wm_sizes = [r['watermark_size'] if 'watermark_size' in r else 'Unknown' for r in image_wm_results]
             
-            if psnrs and ssims and len(psnrs) == len(ssims):
-                axes[1,1].scatter(psnrs, ssims)
-                axes[1,1].set_xlabel('PSNR (dB)')
-                axes[1,1].set_ylabel('SSIM')
-                axes[1,1].set_title('Image Quality Metrics Correlation')
-                axes[1,1].grid(True)
+            # 创建直方图
+            axes[1,1].hist(similarities, bins=10, alpha=0.7, color='green')
+            axes[1,1].set_xlabel('Watermark Similarity')
+            axes[1,1].set_ylabel('Frequency')
+            axes[1,1].set_title('Image Watermark Similarity Distribution')
+            axes[1,1].grid(True)
+        else:
+            # 如果没有图片水印结果，显示PSNR vs SSIM散点图
+            all_results = [r for r in self.results if 'psnr' in r and 'ssim' in r and r['psnr'] > 0 and r['ssim'] > 0]
+            if all_results:
+                psnrs = [r['psnr'] for r in all_results]
+                ssims = [r['ssim'] for r in all_results]
+                
+                if len(psnrs) == len(ssims) and len(psnrs) > 0:
+                    axes[1,1].scatter(psnrs, ssims)
+                    axes[1,1].set_xlabel('PSNR (dB)')
+                    axes[1,1].set_ylabel('SSIM')
+                    axes[1,1].set_title('Image Quality Metrics Correlation')
+                    axes[1,1].grid(True)
         
         plt.tight_layout()
         plt.savefig('watermark_benchmark_report.png', dpi=300, bbox_inches='tight')
@@ -348,10 +480,11 @@ class WatermarkBenchmark:
 
 def main():
     parser = argparse.ArgumentParser(description='数字水印基准测试系统')
-    parser.add_argument('--test', choices=['performance', 'alpha', 'robustness', 'all'], 
+    parser.add_argument('--test', choices=['performance', 'alpha', 'robustness', 'image-performance', 'all'], 
                        default='all', help='基准测试类型')
     parser.add_argument('--image', type=str, help='测试图像路径')
     parser.add_argument('--watermark', type=str, default='SDU2025', help='水印文本')
+    parser.add_argument('--watermark-image', type=str, default='QRcode.png', help='水印图像路径')
     parser.add_argument('--output-dir', type=str, default='benchmark_results', help='结果输出目录')
     
     args = parser.parse_args()
@@ -364,12 +497,18 @@ def main():
     print("=== Digital Watermark Benchmark System ===")
     print(f"Test type: {args.test}")
     print(f"Watermark text: '{args.watermark}'")
+    print(f"Watermark image: '{args.watermark_image}'")
     print(f"Output directory: {args.output_dir}")
     
     if args.test in ['performance', 'all']:
-        # 性能测试
+        # 文字水印性能测试
         image_sizes = [(128, 128), (256, 256), (512, 512), (1024, 1024)]
         benchmark.benchmark_embedding_performance(image_sizes, args.watermark)
+    
+    if args.test in ['image-performance', 'all']:
+        # 图片水印性能测试
+        image_sizes = [(256, 256), (512, 512), (1024, 1024)]
+        benchmark.benchmark_image_watermark_performance(image_sizes, args.watermark_image)
     
     if args.test in ['alpha', 'all']:
         # Alpha值测试
