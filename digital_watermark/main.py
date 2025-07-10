@@ -208,256 +208,7 @@ class BlindWatermark:
             watermark_text = full_text[:watermark_length]  # 如果没找到结束符，按长度截取
         
         return watermark_text
-    
-    def image_to_binary(self, image_path, target_size=(32, 32)):
-        """
-        Convert image to binary representation
-        
-        Args:
-            image_path (str): Path to watermark image
-            target_size (tuple): Target size for watermark image (width, height)
-        
-        Returns:
-            str: Binary representation of the image
-        """
-        # Read watermark image
-        watermark_img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        if watermark_img is None:
-            raise ValueError(f"Cannot read watermark image: {image_path}")
-        
-        # Resize to target size
-        watermark_img = cv2.resize(watermark_img, target_size)
-        
-        # Convert to binary (threshold at 128)
-        _, binary_img = cv2.threshold(watermark_img, 128, 1, cv2.THRESH_BINARY)
-        
-        # Convert to binary string
-        binary_str = ''.join(str(pixel) for row in binary_img for pixel in row)
-        
-        return binary_str, target_size
-    
-    def binary_to_image(self, binary_str, image_size, output_path=None):
-        """
-        Convert binary string back to image
-        
-        Args:
-            binary_str (str): Binary representation of image
-            image_size (tuple): Size of the image (width, height)
-            output_path (str): Optional output path to save extracted watermark
-        
-        Returns:
-            numpy.ndarray: Reconstructed image
-        """
-        width, height = image_size
-        
-        # Convert binary string to numpy array
-        binary_array = np.array([int(bit) for bit in binary_str])
-        
-        # Reshape to image dimensions
-        if len(binary_array) != width * height:
-            # Pad or truncate if size doesn't match
-            expected_size = width * height
-            if len(binary_array) < expected_size:
-                binary_array = np.pad(binary_array, (0, expected_size - len(binary_array)), 'constant')
-            else:
-                binary_array = binary_array[:expected_size]
-        
-        image = binary_array.reshape(height, width)
-        
-        # Convert back to 0-255 range
-        image = (image * 255).astype(np.uint8)
-        
-        # Save extracted watermark if path provided
-        if output_path:
-            cv2.imwrite(output_path, image)
-        
-        return image
-    
-    def add_image_watermark(self, image_path, watermark_image_path, output_path, watermark_size=(32, 32)):
-        """
-        Add image watermark to carrier image
-        
-        Args:
-            image_path (str): Path to carrier image
-            watermark_image_path (str): Path to watermark image
-            output_path (str): Output path for watermarked image
-            watermark_size (tuple): Size of watermark image (width, height)
-        """
-        # Read carrier image
-        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        if img is None:
-            raise ValueError(f"Cannot read carrier image: {image_path}")
-        
-        # Convert to float
-        img = img.astype(np.float32)
-        
-        # Convert watermark image to binary
-        watermark_binary, actual_size = self.image_to_binary(watermark_image_path, watermark_size)
-        
-        # Add size information and end marker
-        size_info = f"{actual_size[0]}x{actual_size[1]}"
-        watermark_with_info = size_info + '|' + watermark_binary + '\x00'
-        
-        # Convert to binary bits
-        watermark_bits = []
-        for char in watermark_with_info:
-            if char == '|' or char == '\x00':
-                watermark_bits.extend([int(bit) for bit in format(ord(char), '08b')])
-            else:
-                watermark_bits.append(int(char))
-        
-        # Calculate available blocks
-        h, w = img.shape
-        num_blocks_h = h // self.block_size
-        num_blocks_w = w // self.block_size
-        total_blocks = num_blocks_h * num_blocks_w
-        
-        if len(watermark_bits) > total_blocks:
-            raise ValueError(f"Watermark image too large. Maximum size: {int(np.sqrt(total_blocks - 64))}x{int(np.sqrt(total_blocks - 64))} pixels")
-        
-        # Create random position sequence
-        np.random.seed(42)
-        positions = list(range(total_blocks))
-        np.random.shuffle(positions)
-        
-        watermarked_img = img.copy()
-        
-        # Process each block
-        for i, bit in enumerate(watermark_bits):
-            if i >= len(positions):
-                break
-                
-            pos = positions[i]
-            row = pos // num_blocks_w
-            col = pos % num_blocks_w
-            
-            # Extract block
-            block = img[row*self.block_size:(row+1)*self.block_size,
-                       col*self.block_size:(col+1)*self.block_size]
-            
-            # DCT transform
-            dct_block = self._dct2(block)
-            
-            # Embed watermark
-            watermarked_dct = self._embed_watermark_block(dct_block.copy(), bit)
-            
-            # Inverse DCT transform
-            watermarked_block = self._idct2(watermarked_dct)
-            
-            # Update image
-            watermarked_img[row*self.block_size:(row+1)*self.block_size,
-                           col*self.block_size:(col+1)*self.block_size] = watermarked_block
-        
-        # Save watermarked image
-        watermarked_img = np.clip(watermarked_img, 0, 255).astype(np.uint8)
-        cv2.imwrite(output_path, watermarked_img)
-        
-        print(f"Image watermark embedding completed: {output_path}")
-        return watermarked_img
-    
-    def extract_image_watermark(self, watermarked_image_path, output_path="extracted_watermark.png"):
-        """
-        Extract image watermark from watermarked image
-        
-        Args:
-            watermarked_image_path (str): Path to watermarked image
-            output_path (str): Output path for extracted watermark image
-        
-        Returns:
-            numpy.ndarray: Extracted watermark image
-        """
-        # Read watermarked image
-        img = cv2.imread(watermarked_image_path, cv2.IMREAD_GRAYSCALE)
-        if img is None:
-            raise ValueError(f"Cannot read watermarked image: {watermarked_image_path}")
-        
-        img = img.astype(np.float32)
-        
-        # Calculate block dimensions
-        h, w = img.shape
-        num_blocks_h = h // self.block_size
-        num_blocks_w = w // self.block_size
-        total_blocks = num_blocks_h * num_blocks_w
-        
-        # Use same random seed
-        np.random.seed(42)
-        positions = list(range(total_blocks))
-        np.random.shuffle(positions)
-        
-        # Extract bits
-        extracted_bits = []
-        
-        for i in range(min(2000, len(positions))):  # Limit extraction to avoid infinite loop
-            pos = positions[i]
-            row = pos // num_blocks_w
-            col = pos % num_blocks_w
-            
-            # Extract block
-            block = img[row*self.block_size:(row+1)*self.block_size,
-                       col*self.block_size:(col+1)*self.block_size]
-            
-            # DCT transform
-            dct_block = self._dct2(block)
-            
-            # Extract watermark bit
-            bit = self._extract_watermark_block(dct_block)
-            extracted_bits.append(bit)
-        
-        # Convert bits to string to find size info and image data
-        extracted_str = ""
-        i = 0
-        while i < len(extracted_bits) - 7:
-            # Try to reconstruct characters
-            byte_bits = extracted_bits[i:i+8]
-            byte_str = ''.join(str(bit) for bit in byte_bits)
-            char = chr(int(byte_str, 2))
-            
-            if char == '|':
-                # Found separator, parse size info
-                size_str = extracted_str
-                try:
-                    width, height = map(int, size_str.split('x'))
-                    break
-                except:
-                    i += 1
-                    continue
-            
-            extracted_str += char
-            i += 8
-        else:
-            raise ValueError("Could not find size information in extracted watermark")
-        
-        # Extract image data
-        i += 8  # Skip separator
-        image_binary = ""
-        expected_bits = width * height
-        
-        bit_count = 0
-        while i < len(extracted_bits) and bit_count < expected_bits:
-            if i + 7 < len(extracted_bits):
-                # Check if this is the end marker
-                byte_bits = extracted_bits[i:i+8]
-                byte_str = ''.join(str(bit) for bit in byte_bits)
-                char = chr(int(byte_str, 2))
-                
-                if char == '\x00':
-                    break
-                
-                # This is image data (direct bits)
-                image_binary += str(extracted_bits[i])
-                bit_count += 1
-                i += 1
-            else:
-                break
-        
-        # Reconstruct image
-        if len(image_binary) >= expected_bits:
-            image_binary = image_binary[:expected_bits]
-            extracted_image = self.binary_to_image(image_binary, (width, height), output_path)
-            print(f"Image watermark extracted: {output_path}")
-            return extracted_image
-        else:
-            raise ValueError("Insufficient data to reconstruct watermark image")
+
 
 class RobustnessTest:
     """鲁棒性测试类"""
@@ -636,7 +387,7 @@ class RobustnessTest:
         return results
     
     def _calculate_accuracy(self, original, extracted):
-        """Calculate character accuracy"""
+        """计算字符准确率"""
         if len(original) == 0:
             return 1.0 if len(extracted) == 0 else 0.0
         
@@ -701,19 +452,24 @@ def main():
         print(f"提取的水印: '{extracted}'")
         
     elif args.mode == 'test':
-        # Complete testing process
-        print("=== Digital Blind Watermark System Complete Test ===")
+        # 基础功能测试
+        print("=== Digital Blind Watermark System Basic Test ===")
         
-        # Create sample image (if no input image specified)
+        # 使用example.png作为默认测试图像（如果没有指定输入图像）
         if not args.image:
-            args.image = create_sample_image()
+            if os.path.exists("example.png"):
+                args.image = "example.png"
+                print("Using example.png as test image")
+            else:
+                args.image = create_sample_image()
+                print("example.png not found, creating sample image")
         
-        # Add watermark
+        # 添加水印
         watermarked_path = "watermarked_image.png"
-        print(f"\n1. Adding watermark '{args.watermark}' to image...")
+        print(f"\n1. Adding watermark '{args.watermark}' to image '{args.image}'...")
         watermark_system.add_watermark(args.image, args.watermark, watermarked_path)
         
-        # Extract watermark for verification
+        # 提取水印验证
         print(f"\n2. Extracting watermark from watermarked image...")
         extracted = watermark_system.extract_watermark(watermarked_path, len(args.watermark))
         print(f"Extraction result: '{extracted}'")
@@ -724,14 +480,17 @@ def main():
             print("✗ Watermark verification failed, please check parameter settings")
             return
         
-        # Robustness testing
+        # 鲁棒性测试
         print(f"\n3. Starting robustness testing...")
         robustness_test = RobustnessTest(watermark_system)
         results = robustness_test.run_all_tests(watermarked_path, args.watermark, "robustness_test_results")
         
-        # Generate visualization report
+        # 生成可视化报告
         print(f"\n4. Generating test report...")
         generate_report(args.watermark, results)
+        
+        print(f"\n5. For performance benchmarking, please run:")
+        print(f"   python benchmark.py --test all --watermark '{args.watermark}'")
 
 
 def generate_report(original_watermark, test_results):
