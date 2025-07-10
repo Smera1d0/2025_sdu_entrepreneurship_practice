@@ -44,7 +44,9 @@ pip install -r requirements.txt
 
 #### 示例图片
 
-![示例图片](example.png)
+<div align="center">
+  <img src="example.png" alt="示例图片" style="width:60%;">
+</div>
 
 #### 1. 文字水印
 ```bash
@@ -56,11 +58,11 @@ python main.py --mode extract --image watermarked_text.png
 ```
 
 <div align="center">
-  <img src="watermarked_text.png" alt="水印图片" style="width:50%;">
+  <img src="watermarked_text.png" alt="水印图片" style="width:60%;">
 </div>
 
 <div align="center">
-  <img src="assert/extract_result.png" alt="提取结果" style="width:50%;">
+  <img src="assert/extract_result.png" alt="提取结果" style="width:60%;">
 </div>
 
 #### 2. 图片水印
@@ -73,15 +75,15 @@ python main.py --mode extract-image --image watermarked_qr.png --output extracte
 ```
 
 <div align="center">
-  <img src="assert/extract_qr_result.png" alt="运行结果" style="width:50%;">
+  <img src="assert/extract_qr_result.png" alt="运行结果" style="width:60%;">
 </div>
 
 <div align="center">
-  <img src="assert/watermarked_qr.png" alt="图片水印" style="width:50%;">
+  <img src="watermarked_qr.png" alt="图片水印" style="width:60%;">
 </div>
 
 <div align="center">
-  <img src="assert/extracted_qr.png" alt="提取结果" style="width:300%;">
+  <img src="extracted_qr.png" alt="提取结果" style="width:300%;">
 </div>
 
 #### 3. 完整测试与演示
