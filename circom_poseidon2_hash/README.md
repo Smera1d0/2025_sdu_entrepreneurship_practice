@@ -249,26 +249,5 @@ template Poseidon2Hash() {
 - [SnarkJS文档](https://github.com/iden3/snarkjs)
 - [零知识证明基础](https://zkproof.org/)
 
-## 🤝 贡献指南
 
-欢迎提交Issue和Pull Request！
 
-1. Fork项目
-2. 创建功能分支
-3. 提交更改
-4. 推送到分支
-5. 创建Pull Request
-
-## 📄 许可证
-
-MIT License
-
-## 🙏 致谢
-
-- Circom团队提供的优秀工具链
-- SnarkJS的Groth16实现
-- Poseidon2论文作者
-
----
-
-**注意**: 本项目主要用于学习和研究目的。生产环境使用前请进行充分的安全评估。 
