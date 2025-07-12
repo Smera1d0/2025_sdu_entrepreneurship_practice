@@ -93,11 +93,15 @@ npm run calculate-hash
 npm run generate-proof
 ```
 
+<img src="assert/image1.png" width="60%" alt="生成证明">
+
 ### 7. 验证证明
 
 ```bash
 npm run verify-proof
 ```
+
+<img src="assert/image2.png" width="60%" alt="验证证明">
 
 ## 📖 详细使用方法
 
