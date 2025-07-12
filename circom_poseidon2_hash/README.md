@@ -45,7 +45,7 @@ circom_poseidon2_hash/
 
 ```bash
 # 克隆项目
-git clone <repository-url>
+git clone https://github.com/Smera1d0/2025_sdu_entrepreneurship_practice.git
 cd circom_poseidon2_hash
 
 # 安装依赖
