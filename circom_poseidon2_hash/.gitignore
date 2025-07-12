@@ -1,0 +1,48 @@
+# 依赖
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 编译生成的文件
+*.r1cs
+*.wasm
+*.sym
+*.c
+*.cpp
+*.h
+*.dat
+
+# 证明相关文件
+*.zkey
+*.ptau
+verification_key.json
+proof.json
+public.json
+input.json
+witness.json
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# 环境变量
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log 

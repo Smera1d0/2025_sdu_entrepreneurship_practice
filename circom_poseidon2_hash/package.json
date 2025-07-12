@@ -1,0 +1,33 @@
+{
+  "name": "circom-poseidon2-hash",
+  "version": "1.0.0",
+  "description": "Poseidon2 hash circuit implementation using circom",
+  "main": "index.js",
+  "scripts": {
+    "compile": "circom poseidon2_hash.circom --r1cs --wasm --sym --c",
+    "setup": "snarkjs groth16 setup poseidon2_hash.r1cs powersOfTau28_hez_final_12.ptau poseidon2_hash_0000.zkey",
+    "contribute": "snarkjs zkey contribute poseidon2_hash_0000.zkey poseidon2_hash_final.zkey --name=\"1st Contributor Name\" -v",
+    "export-verifier": "snarkjs zkey export verificationkey poseidon2_hash_final.zkey verification_key.json",
+    "generate-proof": "node generate_proof.js",
+    "verify-proof": "snarkjs groth16 verify verification_key.json public.json proof.json",
+    "calculate-hash": "node calculate_hash.js",
+    "test": "node test.js",
+    "demo": "node demo.js"
+  },
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "snarkjs": "^0.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0"
+  },
+  "keywords": [
+    "circom",
+    "poseidon2",
+    "zero-knowledge",
+    "zk-snark",
+    "groth16"
+  ],
+  "author": "",
+  "license": "MIT"
+} 
