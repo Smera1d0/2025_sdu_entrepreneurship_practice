@@ -8,9 +8,9 @@
 
 本协议允许两方在不泄露各自集合内容的前提下，安全地计算集合交集元素的权重和。广泛应用于密码泄露检测、隐私统计等场景。
 
-- **P1（客户端）**：持有集合 $V = \{v_i\}$
-- **P2（服务器）**：持有带权集合 $W = \{(w_j, t_j)\}$
-- **目标**：P1 获得 $\sum_{j: w_j \in V \cap W} t_j$，但双方集合内容不泄露
+- **P1（客户端）**：持有集合 V = {v_i}
+- **P2（服务器）**：持有带权集合 W = {(w_j, t_j)}
+- **目标**：P1 获得交集元素的权重和，但双方集合内容不泄露
 
 ---
 
@@ -18,10 +18,10 @@
 
 ```mermaid
 graph TD;
-    A[参数生成] --> B1[Round 1: P1 计算 H(v_i)^k1 并发送];
-    B1 --> B2[Round 2: P2 计算 H(v_i)^{k1k2}, Paillier加密权重, 发送];
-    B2 --> B3[Round 3: P1 计算 H(w_j)^{k1k2} 匹配交集, 同态求和];
-    B3 --> C[Output: P2 解密获得交集权重和];
+    A[参数生成] --> B1[第一轮: P1 计算 H(vi) 的 k1 次方并发送];
+    B1 --> B2[第二轮: P2 计算 H(vi) 的 (k1k2) 次方, 同态加密权重, 发送];
+    B2 --> B3[第三轮: P1 计算 H(wj) 的 (k1k2) 次方, 匹配交集, 求和];
+    B3 --> C[输出: P2 解密获得交集权重和];
 ```
 
 > 注：流程图采用 [Mermaid](https://docs.github.com/get-started/writing-on-github/working-with-advanced-formatting/creating-diagrams#creating-mermaid-diagrams) 语法，GitHub Markdown 可直接渲染。
@@ -80,8 +80,8 @@ from DDH_PSI_Sum_protocol import DDH_PSI_Sum_Homomorphic
 ## 输入输出说明
 
 - **输入**：
-    - 客户端集合 $V$（如 ['alice', 'bob', 'carol', 'dave']）
-    - 服务器集合及权重 $W$（如 [('bob', 20), ('carol', 30), ('eve', 50), ('frank', 60)]）
+    - 客户端集合 V（如 ['alice', 'bob', 'carol', 'dave']）
+    - 服务器集合及权重 W（如 [('bob', 20), ('carol', 30), ('eve', 50), ('frank', 60)]）
 - **输出**：
     - 交集元素（如 {'bob', 'carol'}）
     - 交集权重和（如 50）
