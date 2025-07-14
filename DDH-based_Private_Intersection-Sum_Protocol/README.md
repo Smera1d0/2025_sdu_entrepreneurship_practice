@@ -18,10 +18,10 @@
 
 ```mermaid
 graph TD;
-    A[参数生成] --> B1[第一轮: P1 计算 H(vi) 的 k1 次方并发送];
-    B1 --> B2[第二轮: P2 计算 H(vi) 的 (k1k2) 次方, 同态加密权重, 发送];
-    B2 --> B3[第三轮: P1 计算 H(wj) 的 (k1k2) 次方, 匹配交集, 求和];
-    B3 --> C[输出: P2 解密获得交集权重和];
+    A[参数生成] --> B1["第一轮 - P1 计算 H(vi) 的 k1 次方并发送"];
+    B1 --> B2["第二轮 - P2 计算 H(vi) 的 (k1k2) 次方，同态加密权重，发送"];
+    B2 --> B3["第三轮 - P1 计算 H(wj) 的 (k1k2) 次方，匹配交集，求和"];
+    B3 --> C["输出 - P2 解密获得交集权重和"];
 ```
 
 > 注：流程图采用 [Mermaid](https://docs.github.com/get-started/writing-on-github/working-with-advanced-formatting/creating-diagrams#creating-mermaid-diagrams) 语法，GitHub Markdown 可直接渲染。
