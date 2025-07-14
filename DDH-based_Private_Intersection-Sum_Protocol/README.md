@@ -24,8 +24,6 @@ graph TD;
     B3 --> C["输出 - P2 解密获得交集权重和"];
 ```
 
-> 注：流程图采用 [Mermaid](https://docs.github.com/get-started/writing-on-github/working-with-advanced-formatting/creating-diagrams#creating-mermaid-diagrams) 语法，GitHub Markdown 可直接渲染。
-
 ---
 
 ## 依赖安装
