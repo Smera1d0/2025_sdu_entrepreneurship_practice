@@ -239,21 +239,6 @@ signature = sm2_sign(msg, d, P, custom_id)
 is_valid = sm2_verify(msg, P, signature, custom_id)
 ```
 
-## 贡献指南
-
-欢迎提交 Issue 和 Pull Request！
-
-### 代码规范
-- 使用 Python PEP 8 代码风格
-- 添加必要的类型注解
-- 编写详细的文档字符串
-- 确保测试覆盖率
-
-### 提交规范
-- 提交信息使用中文
-- 包含功能描述和测试结果
-- 重大修改需要更新文档
-
 ## 许可证
 
 本项目采用 MIT 许可证。详见 LICENSE 文件。
@@ -265,14 +250,3 @@ is_valid = sm2_verify(msg, P, signature, custom_id)
 - [RFC 6090: Fundamental Elliptic Curve Cryptography Algorithms](https://tools.ietf.org/html/rfc6090)
 - [gmpy2 Documentation](https://gmpy2.readthedocs.io/)
 
-## 更新日志
-
-### v1.0.0 (2025-07-14)
-- ✅ 实现基础版和优化版 SM2 签名算法
-- ✅ 完整的测试套件和性能对比
-- ✅ 详细的文档和使用说明
-- ✅ 平均 6.1 倍性能提升
-
----
-
-*本项目为山东大学创新创业实践课程作业，仅供学习研究使用。*
