@@ -17,12 +17,14 @@
 ## 协议流程图
 
 ```mermaid
-graph TD
-    A[参数生成] --> B1[Round 1: P1 计算 H(v_i)^k1 并发送]
-    B1 --> B2[Round 2: P2 计算 H(v_i)^{k1k2}, Paillier加密权重, 发送]
-    B2 --> B3[Round 3: P1 计算 H(w_j)^{k1k2} 匹配交集, 同态求和]
-    B3 --> C[Output: P2 解密获得交集权重和]
+graph TD;
+    A[参数生成] --> B1[Round 1: P1 计算 H(v_i)^k1 并发送];
+    B1 --> B2[Round 2: P2 计算 H(v_i)^{k1k2}, Paillier加密权重, 发送];
+    B2 --> B3[Round 3: P1 计算 H(w_j)^{k1k2} 匹配交集, 同态求和];
+    B3 --> C[Output: P2 解密获得交集权重和];
 ```
+
+> 注：流程图采用 [Mermaid](https://docs.github.com/get-started/writing-on-github/working-with-advanced-formatting/creating-diagrams#creating-mermaid-diagrams) 语法，GitHub Markdown 可直接渲染。
 
 ---
 
@@ -97,7 +99,3 @@ from DDH_PSI_Sum_protocol import DDH_PSI_Sum_Homomorphic
 
 - 协议设计与伪代码参考自原论文
 - Paillier同态加密实现基于 [phe](https://github.com/data61/python-paillier)
-
----
-
-如有问题或建议，欢迎 issue 或 PR！ 
