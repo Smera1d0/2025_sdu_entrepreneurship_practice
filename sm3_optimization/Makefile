@@ -55,6 +55,29 @@ TEST_TARGET = $(BUILD_DIR)/test_sm3
 BENCHMARK_TARGET = $(BUILD_DIR)/benchmark_sm3
 EXAMPLE_TARGET = $(BUILD_DIR)/example
 
+# ========== 课程作业相关 ========== #
+# length extension attack
+BUILD_LEA = build/sm3_length_extension_attack
+LEA_SRC = length_extension_attack/sm3_length_extension_attack.c
+BASIC_SRC = src/basic/sm3_basic.c
+
+$(BUILD_LEA): $(LEA_SRC) include/sm3_basic.h $(BASIC_SRC) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -o $@ $(LEA_SRC) $(BASIC_SRC)
+
+length_attack: $(BUILD_LEA)
+	$<
+
+# merkle tree
+BUILD_MERKLE = build/test_merkle_tree
+MERKLE_SRCS = merkle_tree/sm3_merkle_tree.c merkle_tree/test_merkle_tree.c
+BASIC_SRC = src/basic/sm3_basic.c
+
+$(BUILD_MERKLE): $(MERKLE_SRCS) include/sm3_basic.h merkle_tree/sm3_merkle_tree.h $(BASIC_SRC) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -o $@ merkle_tree/sm3_merkle_tree.c merkle_tree/test_merkle_tree.c $(BASIC_SRC)
+
+merkle_test: $(BUILD_MERKLE)
+	$<
+
 # 默认目标
 all: $(BUILD_DIR) $(TEST_TARGET) $(BENCHMARK_TARGET) $(EXAMPLE_TARGET)
 
@@ -159,4 +182,4 @@ check_compiler:
 	@echo "支持SSE2: $(shell gcc -msse2 -E - < /dev/null > /dev/null 2>&1 && echo "是" || echo "否")"
 	@echo "支持AVX2: $(shell gcc -mavx2 -E - < /dev/null > /dev/null 2>&1 && echo "是" || echo "否")"
 
-.PHONY: all test benchmark example clean install uninstall help check_compiler quick_benchmark
+.PHONY: all test benchmark example clean install uninstall help check_compiler quick_benchmark length_attack merkle_test
