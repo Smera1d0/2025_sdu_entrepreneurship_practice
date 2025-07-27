@@ -26,10 +26,12 @@ Poseidon2是一种专为零知识证明系统设计的哈希算法，具有以�
 3. **轮常数加法**: 提供非线性，防止差分攻击
 
 状态更新方程：
+
 $$
 \mathbf{s}_{i+1} = \mathrm{MDS} \cdot (\mathbf{s}_i + \mathbf{round\_constants})^{\alpha}
 $$
-其中$\mathbf{s}_i$为第$i$轮的状态向量，$\mathrm{MDS}$为最大距离可分矩阵。
+
+其中 $\mathbf{s}_i$ 为第 $i$ 轮的状态向量， $\mathrm{MDS}$ 为最大距离可分矩阵。
 
 ### Groth16证明系统
 Groth16是一种高效的零知识证明系统，具有：
