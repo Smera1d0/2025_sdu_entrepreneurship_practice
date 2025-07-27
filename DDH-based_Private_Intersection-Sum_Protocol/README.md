@@ -1,30 +1,54 @@
 # DDH-based Private Intersection-Sum Protocol
 
-本项目实现了论文 [Private Set Intersection-Sum Protocol with Applications to Password Breach Statistics](https://eprint.iacr.org/2019/723.pdf) 中 Figure 2 的 DDH-based Private Intersection-Sum Protocol，支持同态加密（Paillier）保护权重隐私。
-
----
-
 ## 协议简介
 
-本协议允许两方在不泄露各自集合内容的前提下，安全地计算集合交集元素的权重和。广泛应用于密码泄露检测、隐私统计等场景。
+该协议允许两方在不泄露各自集合内容的前提下，安全地计算集合交集元素的权重和。这项技术可以用于密码泄露检测、隐私统计等场景。
 
 - **P1（客户端）**：持有集合 V = {v_i}
 - **P2（服务器）**：持有带权集合 W = {(w_j, t_j)}
 - **目标**：P1 获得交集元素的权重和，但双方集合内容不泄露
 
----
+## 数学基础与协议原理
 
-## 协议流程图
+### DDH假设
+DDH（Decisional Diffie-Hellman）假设是协议安全性的基础。在循环群 G 中，给定生成元 g 和元素 g^a, g^b, g^c，判断 c = ab 是否成立在计算上是困难的。
+
+### Paillier同态加密
+Paillier加密系统具有加法同态性质：
+- 加密：E(m) = g^m * r^n mod n^2
+- 解密：D(c) = ((c^λ mod n^2) - 1) / n * μ mod n
+- 同态性质：E(m1) * E(m2) = E(m1 + m2)
+
+### 协议数学描述
+1. P1选择随机数 k1 ∈ Z_q，计算 H(v_i)^k1 并发送给P2
+2. P2选择随机数 k2 ∈ Z_q，计算 H(w_j)^k1k2，并使用Paillier加密权重 t_j，发送给P1
+3. P1计算 H(v_i)^k1k2，匹配交集元素，对权重密文进行同态加法运算
+4. P2解密得到交集权重和
+
+## 协议流程
 
 ```mermaid
 graph TD;
-    A[参数生成] --> B1["第一轮 - P1 计算 H(vi) 的 k1 次方并发送"];
+    A[参数生成] --> B1["第一轮 - P1 计算 H(vi) 的 k1 次方并发送"]; 
     B1 --> B2["第二轮 - P2 计算 H(vi) 的 (k1k2) 次方，同态加密权重，发送"];
     B2 --> B3["第三轮 - P1 计算 H(wj) 的 (k1k2) 次方，匹配交集，求和"];
     B3 --> C["输出 - P2 解密获得交集权重和"];
 ```
 
----
+## 实现思路
+
+### 哈希函数
+使用SHA-256作为哈希函数 H，将字符串映射到椭圆曲线点。为了确保哈希结果在椭圆曲线上，我们采用以下方法：
+1. 计算字符串的SHA-256哈希值
+2. 将哈希值解释为x坐标
+3. 通过椭圆曲线方程 y^2 = x^3 + ax + b 计算y坐标
+4. 如果y坐标不存在，则递增x值直到找到有效的点
+
+### 椭圆曲线运算
+使用secp256k1椭圆曲线进行点运算，包括点加法和标量乘法。通过高效的二进制展开算法实现快速点乘。
+
+### 同态加密
+使用phe库实现Paillier同态加密，确保权重在传输过程中的隐私性。利用其加法同态性质，P1可以对密文进行运算而不解密。
 
 ## 依赖安装
 
@@ -33,8 +57,6 @@ graph TD;
 ```bash
 pip install phe pycryptodome
 ```
-
----
 
 ## 文件结构与用法
 
@@ -73,8 +95,6 @@ print(f"交集权重和: {intersection_sum}")
 from DDH_PSI_Sum_protocol import DDH_PSI_Sum_Homomorphic
 ```
 
----
-
 ## 输入输出说明
 
 - **输入**：
@@ -84,14 +104,10 @@ from DDH_PSI_Sum_protocol import DDH_PSI_Sum_Homomorphic
     - 交集元素（如 {'bob', 'carol'}）
     - 交集权重和（如 50）
 
----
-
 ## 参考文献
 
 - [1] Seny Kamara, Payman Mohassel, Ben Riva. Private Set Intersection-Sum Protocol with Applications to Password Breach Statistics. [eprint.iacr.org/2019/723.pdf](https://eprint.iacr.org/2019/723.pdf)
 - [Paillier同态加密库 phe](https://github.com/data61/python-paillier)
-
----
 
 ## 致谢
 
