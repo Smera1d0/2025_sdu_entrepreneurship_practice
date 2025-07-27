@@ -25,18 +25,20 @@ SM2是中国国家密码管理局发布的椭圆曲线公钥密码算法，包�
 ### 数学基础
 
 #### 椭圆曲线离散对数问题(ECDLP)
-椭圆曲线上的点构成一个阿贝尔群，给定基点$G$和点$P$，找到整数$k$使得$P = kG$在计算上是困难的。
+椭圆曲线上的点构成一个阿贝尔群，给定基点 $G$ 和点 $P$ ，找到整数 $k$ 使得 $P = kG$ 在计算上是困难的。
 
 #### 椭圆曲线方程
 SM2使用以下Weierstrass形式椭圆曲线：
+
 $$y^2 = x^3 + ax + b \pmod{p}$$
-其中$p$为大素数，$a, b$为曲线参数。
+
+其中 $p$ 为大素数， $a, b$ 为曲线参数。
 
 ### SM2签名算法数学描述
 
 #### 密钥生成
 1. 选择随机数 $d \in [1, n-1]$ 作为私钥
-2. 计算公钥 $P = dG$，其中$G$为基点
+2. 计算公钥 $P = dG$，其中 $G$ 为基点
 
 #### 签名生成
 给定消息$M$，用户ID和公钥$P$：
@@ -44,16 +46,16 @@ $$y^2 = x^3 + ax + b \pmod{p}$$
 2. 计算 $e = \mathrm{SM3}(Z \mathbin\| M)$
 3. 选择随机数 $k \in [1, n-1]$
 4. 计算椭圆曲线点 $(x_1, y_1) = kG$
-5. 计算 $r = (e + x_1) \bmod n$，如果$r = 0$或$r + k = n$则重新选择$k$
-6. 计算 $s = (1 + d)^{-1} \cdot (k - r \cdot d) \bmod n$，如果$s = 0$则重新选择$k$
-7. 签名为$(r, s)$
+5. 计算 $r = (e + x_1) \bmod n$，如果 $r = 0$ 或 $r + k = n$ 则重新选择 $k$
+6. 计算 $s = (1 + d)^{-1} \cdot (k - r \cdot d) \bmod n$，如果 $s = 0$ 则重新选择 $k$
+7. 签名为 $(r, s)$
 
 #### 签名验证
-给定消息$M$，公钥$P$和签名$(r, s)$：
+给定消息 $M$ ，公钥 $P$ 和签名 $(r, s)$ ：
 1. 验证 $r, s \in [1, n-1]$
 2. 计算 $Z = \mathrm{SM3}(\mathrm{ENTL} \mathbin\| \mathrm{ID} \mathbin\| a \mathbin\| b \mathbin\| G_x \mathbin\| G_y \mathbin\| P_x \mathbin\| P_y)$
 3. 计算 $e = \mathrm{SM3}(Z \mathbin\| M)$
-4. 计算 $t = (r + s) \bmod n$，如果$t = 0$则拒绝签名
+4. 计算 $t = (r + s) \bmod n$，如果 $t = 0$ 则拒绝签名
 5. 计算椭圆曲线点 $(x_1', y_1') = sG + tP$
 6. 计算 $R = (e + x_1') \bmod n$
 7. 接受签名当且仅当 $R = r$
@@ -203,7 +205,6 @@ python benchmark_sm2.py
 | **大数运算** | `int` + `pow()` | `gmpy2.mpz()` + `gmpy2.invert()` | 3-5x |
 | **模运算** | `(a * b) % p` | `gmpy2.f_mod(a * b, p)` | 2-3x |
 | **内存占用** | 普通类属性 | `__slots__` 优化 | 减少 20-30% |
-| **代码复杂度** | 简单易懂 | 略复杂 | - |
 | **依赖库** | 无额外依赖 | 需要 gmpy2 | - |
 | **验签耗时** | ~7.7 秒 (100次) | ~1.26 秒 (100次) | **6.1x** |
 | **适用场景** | 教学学习 | 高性能应用 | - |
@@ -241,7 +242,7 @@ python benchmark_sm2.py
 ## 技术细节
 
 ### 椭圆曲线运算
-本实现采用 Weierstrass 形式椭圆曲线 $y^2 = x^3 + ax + b$，使用标准的点加法和点乘算法。
+本实现采用 Weierstrass 形式椭圆曲线 $y^2 = x^3 + ax + b$ ，使用标准的点加法和点乘算法。
 
 ### Z 值计算
 根据 GM/T 0003.2-2012 标准，Z 值计算包含：
@@ -290,5 +291,3 @@ is_valid = sm2_verify(msg, P, signature, custom_id)
 - [GM/T 0004-2012 SM3密码杂凑算法](http://www.gmbz.org.cn/)
 - [RFC 6090: Fundamental Elliptic Curve Cryptography Algorithms](https://tools.ietf.org/html/rfc6090)
 - [gmpy2 Documentation](https://gmpy2.readthedocs.io/)
-
-j
