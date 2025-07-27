@@ -11,18 +11,18 @@
 ## 数学基础与协议原理
 
 ### DDH假设
-DDH（Decisional Diffie-Hellman）假设是协议安全性的基础。在循环群 G 中，给定生成元 g 和元素 g^a, g^b, g^c，判断 c = ab 是否成立在计算上是困难的。
+DDH（Decisional Diffie-Hellman）假设是协议安全性的基础。在循环群 G 中，给定生成元 g 和元素 $g^a$, $g^b$, $g^c$，判断 $c = ab$ 是否成立在计算上是困难的。
 
 ### Paillier同态加密
 Paillier加密系统具有加法同态性质：
-- 加密：E(m) = g^m * r^n mod n^2
-- 解密：D(c) = ((c^λ mod n^2) - 1) / n * μ mod n
-- 同态性质：E(m1) * E(m2) = E(m1 + m2)
+- 加密：$E(m) = g^m \cdot r^n \bmod n^2$
+- 解密：$D(c) = ((c^\lambda \bmod n^2) - 1) / n \cdot \mu \bmod n$
+- 同态性质：$E(m_1) \cdot E(m_2) = E(m_1 + m_2)$
 
 ### 协议数学描述
-1. P1选择随机数 k1 ∈ Z_q，计算 H(v_i)^k1 并发送给P2
-2. P2选择随机数 k2 ∈ Z_q，计算 H(w_j)^k1k2，并使用Paillier加密权重 t_j，发送给P1
-3. P1计算 H(v_i)^k1k2，匹配交集元素，对权重密文进行同态加法运算
+1. P1选择随机数 $k_1 \in Z_q$，计算 $H(v_i)^{k_1}$ 并发送给P2
+2. P2选择随机数 $k_2 \in Z_q$，计算 $H(w_j)^{k_1k_2}$，并使用Paillier加密权重 $t_j$，发送给P1
+3. P1计算 $H(v_i)^{k_1k_2}$，匹配交集元素，对权重密文进行同态加法运算
 4. P2解密得到交集权重和
 
 ## 协议流程
@@ -41,7 +41,7 @@ graph TD;
 使用SHA-256作为哈希函数 H，将字符串映射到椭圆曲线点。为了确保哈希结果在椭圆曲线上，我们采用以下方法：
 1. 计算字符串的SHA-256哈希值
 2. 将哈希值解释为x坐标
-3. 通过椭圆曲线方程 y^2 = x^3 + ax + b 计算y坐标
+3. 通过椭圆曲线方程 $y^2 = x^3 + ax + b$ 计算y坐标
 4. 如果y坐标不存在，则递增x值直到找到有效的点
 
 ### 椭圆曲线运算
@@ -108,8 +108,3 @@ from DDH_PSI_Sum_protocol import DDH_PSI_Sum_Homomorphic
 
 - [1] Seny Kamara, Payman Mohassel, Ben Riva. Private Set Intersection-Sum Protocol with Applications to Password Breach Statistics. [eprint.iacr.org/2019/723.pdf](https://eprint.iacr.org/2019/723.pdf)
 - [Paillier同态加密库 phe](https://github.com/data61/python-paillier)
-
-## 致谢
-
-- 协议设计与伪代码参考自原论文
-- Paillier同态加密实现基于 [phe](https://github.com/data61/python-paillier)

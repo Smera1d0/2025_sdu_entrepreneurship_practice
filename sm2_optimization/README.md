@@ -25,40 +25,38 @@ SM2是中国国家密码管理局发布的椭圆曲线公钥密码算法，包�
 ### 数学基础
 
 #### 椭圆曲线离散对数问题(ECDLP)
-椭圆曲线上的点构成一个阿贝尔群，给定基点G和点P，找到整数k使得P = kG在计算上是困难的。
+椭圆曲线上的点构成一个阿贝尔群，给定基点$G$和点$P$，找到整数$k$使得$P = kG$在计算上是困难的。
 
 #### 椭圆曲线方程
 SM2使用以下Weierstrass形式椭圆曲线：
-```
-y² = x³ + ax + b (mod p)
-```
-其中p为大素数，a, b为曲线参数。
+$$y^2 = x^3 + ax + b \pmod{p}$$
+其中$p$为大素数，$a, b$为曲线参数。
 
 ### SM2签名算法数学描述
 
 #### 密钥生成
-1. 选择随机数 d ∈ [1, n-1] 作为私钥
-2. 计算公钥 P = dG，其中G为基点
+1. 选择随机数 $d \in [1, n-1]$ 作为私钥
+2. 计算公钥 $P = dG$，其中$G$为基点
 
 #### 签名生成
-给定消息M，用户ID和公钥P：
-1. 计算 Z = SM3(ENTL || ID || a || b || Gx || Gy || Px || Py)
-2. 计算 e = SM3(Z || M)
-3. 选择随机数 k ∈ [1, n-1]
-4. 计算椭圆曲线点 (x1, y1) = kG
-5. 计算 r = (e + x1) mod n，如果r = 0或r + k = n则重新选择k
-6. 计算 s = (1 + d)^(-1) * (k - r * d) mod n，如果s = 0则重新选择k
-7. 签名为(r, s)
+给定消息$M$，用户ID和公钥$P$：
+1. 计算 $Z = \mathrm{SM3}(\mathrm{ENTL} \mathbin\| \mathrm{ID} \mathbin\| a \mathbin\| b \mathbin\| G_x \mathbin\| G_y \mathbin\| P_x \mathbin\| P_y)$
+2. 计算 $e = \mathrm{SM3}(Z \mathbin\| M)$
+3. 选择随机数 $k \in [1, n-1]$
+4. 计算椭圆曲线点 $(x_1, y_1) = kG$
+5. 计算 $r = (e + x_1) \bmod n$，如果$r = 0$或$r + k = n$则重新选择$k$
+6. 计算 $s = (1 + d)^{-1} \cdot (k - r \cdot d) \bmod n$，如果$s = 0$则重新选择$k$
+7. 签名为$(r, s)$
 
 #### 签名验证
-给定消息M，公钥P和签名(r, s)：
-1. 验证 r, s ∈ [1, n-1]
-2. 计算 Z = SM3(ENTL || ID || a || b || Gx || Gy || Px || Py)
-3. 计算 e = SM3(Z || M)
-4. 计算 t = (r + s) mod n，如果t = 0则拒绝签名
-5. 计算椭圆曲线点 (x1', y1') = sG + tP
-6. 计算 R = (e + x1') mod n
-7. 接受签名当且仅当 R = r
+给定消息$M$，公钥$P$和签名$(r, s)$：
+1. 验证 $r, s \in [1, n-1]$
+2. 计算 $Z = \mathrm{SM3}(\mathrm{ENTL} \mathbin\| \mathrm{ID} \mathbin\| a \mathbin\| b \mathbin\| G_x \mathbin\| G_y \mathbin\| P_x \mathbin\| P_y)$
+3. 计算 $e = \mathrm{SM3}(Z \mathbin\| M)$
+4. 计算 $t = (r + s) \bmod n$，如果$t = 0$则拒绝签名
+5. 计算椭圆曲线点 $(x_1', y_1') = sG + tP$
+6. 计算 $R = (e + x_1') \bmod n$
+7. 接受签名当且仅当 $R = r$
 
 ## 实现思路
 
@@ -125,7 +123,7 @@ Z值计算涉及多次SM3哈希运算，通过预计算不变参数减少重复�
 - **域参数 p**: `0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF`
 - **曲线参数 a**: `0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC`
 - **曲线参数 b**: `0x28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93`
-- **基点 G**: `(Gx, Gy)`
+- **基点 G**: $(G_x, G_y)$
 - **阶 n**: `0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123`
 
 ## 环境要求
@@ -243,7 +241,7 @@ python benchmark_sm2.py
 ## 技术细节
 
 ### 椭圆曲线运算
-本实现采用 Weierstrass 形式椭圆曲线 `y² = x³ + ax + b`，使用标准的点加法和点乘算法。
+本实现采用 Weierstrass 形式椭圆曲线 $y^2 = x^3 + ax + b$，使用标准的点加法和点乘算法。
 
 ### Z 值计算
 根据 GM/T 0003.2-2012 标准，Z 值计算包含：
@@ -253,8 +251,8 @@ Z = SM3(ENTL || ID || a || b || Gx || Gy || Px || Py)
 其中 ENTL 是用户 ID 长度的 2 字节大端表示。
 
 ### 签名格式
-签名结果为 `(r, s)` 元组，其中：
-- `r, s` 均为 `[1, n-1]` 范围内的整数
+签名结果为 $(r, s)$ 元组，其中：
+- `r, s` 均为 $[1, n-1]$ 范围内的整数
 - 序列化时通常转换为固定长度的字节串
 
 ## 使用示例

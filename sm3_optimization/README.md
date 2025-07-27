@@ -31,69 +31,59 @@ SM3算法包含以下几个主要部分：
 
 #### 布尔函数
 SM3使用以下三个布尔函数：
-```
-FF_j(X, Y, Z) = X ⊕ Y ⊕ Z                     (0 ≤ j ≤ 15)
-FF_j(X, Y, Z) = (X ∧ Y) ∨ (X ∧ Z) ∨ (Y ∧ Z)  (16 ≤ j ≤ 63)
-GG_j(X, Y, Z) = X ⊕ Y ⊕ Z                     (0 ≤ j ≤ 15)
-GG_j(X, Y, Z) = (X ∧ Y) ∨ (¬X ∧ Z)           (16 ≤ j ≤ 63)
-```
+$$\mathrm{FF}_j(X, Y, Z) = X \oplus Y \oplus Z \quad (0 \le j \le 15)$$
+$$\mathrm{FF}_j(X, Y, Z) = (X \land Y) \lor (X \land Z) \lor (Y \land Z) \quad (16 \le j \le 63)$$
+$$\mathrm{GG}_j(X, Y, Z) = X \oplus Y \oplus Z \quad (0 \le j \le 15)$$
+$$\mathrm{GG}_j(X, Y, Z) = (X \land Y) \lor (\lnot X \land Z) \quad (16 \le j \le 63)$$
 
 #### 置换函数
 ```
-P_0(X) = X ⊕ (X ≪ 9) ⊕ (X ≪ 17)
-P_1(X) = X ⊕ (X ≪ 15) ⊕ (X ≪ 23)
+P_0(X) = X \oplus (X \ll 9) \oplus (X \ll 17)
+P_1(X) = X \oplus (X \ll 15) \oplus (X \ll 23)
 ```
-其中≪表示循环左移。
+其中$\ll$表示循环左移。
 
 #### 迭代过程
 初始值：
-```
-IV = 7380166F 4914B2B9 172442D7 DAE3A8A1 39170A4E 2522AC6F 3CE1D3D1 84F5E1DD
-```
+$$\mathrm{IV} = \text{7380166F 4914B2B9 172442D7 DAE3A8A1 39170A4E 2522AC6F 3CE1D3D1 84F5E1DD}$$
 
 迭代压缩：
-```
-V_(i+1) = CF(V_i, B_i)
-```
-其中CF为压缩函数，B_i为第i个消息块。
+$$V_{i+1} = \mathrm{CF}(V_i, B_i)$$
+其中$\mathrm{CF}$为压缩函数，$B_i$为第$i$个消息块。
 
 ## 实现思路
 
 ### 消息预处理
-1. **填充**：在消息末尾添加比特'1'，然后添加k个比特'0'，使得消息长度 ≡ 448 (mod 512)
+1. **填充**：在消息末尾添加比特'1'，然后添加$k$个比特'0'，使得消息长度 $\equiv 448 \pmod{512}$
 2. **长度附加**：附加一个64位的消息长度
 3. **分块**：将消息分为512位的块
 
 ### 消息扩展
-对每个512位消息块B(i)：
-1. 将B(i)分为16个字W_0, W_1, ..., W_15
-2. 扩展生成W_16, ..., W_67：
-   ```
-   W_j = P_1(W_{j-16} ⊕ W_{j-9} ⊕ (W_{j-3} ≪ 15)) ⊕ (W_{j-13} ≪ 7) ⊕ W_{j-6}
-   ```
-3. 计算W'_0, ..., W'_63：
-   ```
-   W'_j = W_j ⊕ W_{j+4}
-   ```
+对每个512位消息块$B_i$：
+1. 将$B_i$分为16个字$W_0, W_1, \ldots, W_{15}$
+2. 扩展生成$W_{16}, \ldots, W_{67}$：
+   $$W_j = P_1(W_{j-16} \oplus W_{j-9} \oplus (W_{j-3} \ll 15)) \oplus (W_{j-13} \ll 7) \oplus W_{j-6}$$
+3. 计算$W'_0, \ldots, W'_{63}$：
+   $$W'_j = W_j \oplus W_{j+4}$$
 
 ### 压缩函数
 对每个消息块进行64轮迭代：
 ```
 A B C D E F G H <- V_i
 for j = 0 to 63:
-    SS1 = ((A ≪ 12) + E + (T_j ≪ (j mod 32))) ≪ 7
-    SS2 = SS1 ⊕ (A ≪ 12)
-    TT1 = FF_j(A, B, C) + D + SS2 + W'_j
-    TT2 = GG_j(E, F, G) + H + SS1 + W_j
+    SS1 = ((A \ll 12) + E + (T_j \ll (j \bmod 32))) \ll 7
+    SS2 = SS1 \oplus (A \ll 12)
+    TT1 = FF_j(A, B, C) + D + \mathrm{SS}2 + W'_j
+    TT2 = GG_j(E, F, G) + H + \mathrm{SS}1 + W_j
     D = C
-    C = B ≪ 9
+    C = B \ll 9
     B = A
-    A = TT1
+    A = \mathrm{TT}1
     H = G
-    G = F ≪ 19
+    G = F \ll 19
     F = E
-    E = P_0(TT2)
-V_{i+1} = ABCDEFGH ⊕ V_i
+    E = P_0(\mathrm{TT}2)
+V_{i+1} = \mathrm{ABCDEFGH} \oplus V_i
 ```
 
 ### 优化策略
