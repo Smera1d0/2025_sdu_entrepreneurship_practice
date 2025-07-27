@@ -5,8 +5,6 @@
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg)](README.md)
 [![Architecture](https://img.shields.io/badge/arch-x86__64%20%7C%20ARM64-orange.svg)](README.md)
 
-这是一个完整的国密SM3哈希算法的C语言实现，包含基础版本和优化版本，具有高性能、高可靠性的特点。
-
 ## 项目概述
 
 SM3是中华人民共和国政府采用的一种密码散列函数标准，由国家密码管理局于2010年12月17日发布。本项目提供了SM3算法的高质量C语言实现，包括：
@@ -31,10 +29,14 @@ SM3算法包含以下几个主要部分：
 
 #### 布尔函数
 SM3使用以下三个布尔函数：
-$$\mathrm{FF}_j(X, Y, Z) = X \oplus Y \oplus Z \quad (0 \le j \le 15)$$
-$$\mathrm{FF}_j(X, Y, Z) = (X \land Y) \lor (X \land Z) \lor (Y \land Z) \quad (16 \le j \le 63)$$
-$$\mathrm{GG}_j(X, Y, Z) = X \oplus Y \oplus Z \quad (0 \le j \le 15)$$
-$$\mathrm{GG}_j(X, Y, Z) = (X \land Y) \lor (\lnot X \land Z) \quad (16 \le j \le 63)$$
+
+$$\mathrm{FF}_j(X, Y, Z) = X \oplus Y \oplus Z \quad (0 \le j \le 15)$$  
+
+$$\mathrm{FF}_j(X, Y, Z) = (X \land Y) \lor (X \land Z) \lor (Y \land Z) \quad (16 \le j \le 63)$$ 
+
+$$\mathrm{GG}_j(X, Y, Z) = X \oplus Y \oplus Z \quad (0 \le j \le 15)$$ 
+
+$$\mathrm{GG}_j(X, Y, Z) = (X \land Y) \lor (\lnot X \land Z) \quad (16 \le j \le 63)$$ 
 
 #### 置换函数
 ```
@@ -45,11 +47,14 @@ P_1(X) = X \oplus (X \ll 15) \oplus (X \ll 23)
 
 #### 迭代过程
 初始值：
+
 $$\mathrm{IV} = \text{7380166F 4914B2B9 172442D7 DAE3A8A1 39170A4E 2522AC6F 3CE1D3D1 84F5E1DD}$$
 
 迭代压缩：
+
 $$V_{i+1} = \mathrm{CF}(V_i, B_i)$$
-其中$\mathrm{CF}$为压缩函数，$B_i$为第$i$个消息块。
+
+其中 $\mathrm{CF}$ 为压缩函数， $B_i$ 为第 $i$ 个消息块。
 
 ## 实现思路
 
@@ -59,12 +64,18 @@ $$V_{i+1} = \mathrm{CF}(V_i, B_i)$$
 3. **分块**：将消息分为512位的块
 
 ### 消息扩展
-对每个512位消息块$B_i$：
-1. 将$B_i$分为16个字$W_0, W_1, \ldots, W_{15}$
-2. 扩展生成$W_{16}, \ldots, W_{67}$：
-   $$W_j = P_1(W_{j-16} \oplus W_{j-9} \oplus (W_{j-3} \ll 15)) \oplus (W_{j-13} \ll 7) \oplus W_{j-6}$$
-3. 计算$W'_0, \ldots, W'_{63}$：
-   $$W'_j = W_j \oplus W_{j+4}$$
+对每个512位消息块 $B_i$ ：
+1. 将 $B_i$ 分为16个字 $W_0, W_1, \ldots, W_{15}$
+2. 扩展生成 $W_{16}, \ldots, W_{67}$：
+   
+$$W_j = P_1(W_{j-16} \oplus W_{j-9} \oplus (W_{j-3} \ll 15)) \oplus (W_{j-13} \ll 7) \oplus W_{j-6}$$
+   
+3. 计算 $W'_0, \dots, W'_{63}$：
+
+$$
+W'_j = W_j \oplus W_{j+4}
+$$
+
 
 ### 压缩函数
 对每个消息块进行64轮迭代：
