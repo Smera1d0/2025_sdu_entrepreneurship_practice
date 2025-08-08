@@ -5,7 +5,15 @@
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg)](README.md)
 [![Architecture](https://img.shields.io/badge/arch-x86__64%20%7C%20ARM64-orange.svg)](README.md)
 
-本仓库是为2025年山东大学创新创业实践课程开发的项目集合。这些项目涵盖了现代密码学和信息安全的多个领域，包括密码算法优化、零知识证明和数字水印技术。
+本仓库是为2025年山东大学创新创业实践课程开发的项目集合。
+
+## 项目作者
+- 姓名：密语
+- 学号：202200460104
+- 班级：网安 1 班
+
+
+
 
 ## 项目总览
 
